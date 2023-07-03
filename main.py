@@ -43,6 +43,13 @@ class Game():
         self.field[y][x] = tagger if place else self.field[y][x]
         return place
 
+    def check_tie(self):
+        filled = 0
+        for i in self.field:
+            for j in i:
+                filled += 1 if j != EMPTY else 0
+        return True if filled == 9 else False
+
     def check_win(self, tagger):
         t = 0
         for item in self.win_positions:
@@ -89,6 +96,11 @@ class Game():
             if self.check_win(PLAYER) or self.check_win(ENEMY):
                 self.end()
                 break
+
+            if self.check_tie():
+                self.draw.draw_tie()
+                break
+
             #enemy
             while True:
                 self.draw.draw(self.field)
@@ -97,8 +109,13 @@ class Game():
                         self.draw.draw(self.field)
                         self.draw.draw_moved(ENEMY)
                         break
+                
             if self.check_win(PLAYER) or self.check_win(ENEMY):
                 self.end()
+                break
+
+            if self.check_tie():
+                self.draw.draw_tie()
                 break
 
 if __name__ == '__main__':

@@ -23,6 +23,9 @@ class Draw:
             table.add_row(str(x+1), items_row[0], items_row[1], items_row[2])
         self.console.print(table)
 
+    def draw_tie(self):
+        print(Panel(f"[bold green]Tie![/bold green]"))
+
     def win(self, tagger):
         if tagger == PLAYER:
             print(Panel(f" Congratulations! [bold green]You[/bold green] won!"))
