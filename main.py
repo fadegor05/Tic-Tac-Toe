@@ -1,172 +1,105 @@
-import random
-from rich.console import Console
-from rich.table import Table
-from rich.theme import Theme
-from rich.markdown import Markdown
-from rich import print
-from rich.panel import Panel
 from config import *
+from draw import Draw
+from random import randint
 
+# Main game class
 class Game():
     def __init__(self):
-        custom_theme = Theme({'title': 'bold green blink','info': 'dim cyan', 'warning': 'bold yellow'})
-        self.console = Console(theme=custom_theme)
-
-        self.start = self.get_start()
+        # Initialization
+        self.draw = Draw(ICONS)
+        # Generating a game field
         self.field = self.create_field()
-        self.print_credits()
-        self.game_cycle()
+        # Getting a winning position on field
+        self.win_positions = self.generate_win_positions()
+        # Starting main game loop
+        self.main_loop()
 
-    def print_credits(self):
-        cd = Markdown(CREDITS)
-        self.console.print(cd)
-
+    #init functions
     def create_field(self):
-        field = []
-        for row in range(0,3):
-            row_items = []
-            for item in range(0,3):
-                row_items.append(SPACE)
-            field.append(row_items)
-        return field
+        return [ [ EMPTY for f in range(0,3) if i < 3] for i in range(0,3) if i < 3 ]
+    
+    def generate_win_positions(self):
+        positions = []
+        # horizontal lines
+        for i in range(0,3):
+            positions.append( [[i,j] for j in range(0,3) ])
+        # vertical lines
+        for i in range(0,3):
+            positions.append( [[j,i] for j in range(0,3) ])
+        # positive diagonal
+        positions.append( [[i,i] for i in range(0,3) ])
+        # negative diagonal
+        positions.append( [[i,-i+2] for i in range(0,3) ])
 
-    def draw_field(self):
-        drawing = Table(' ', 'A', 'B', 'C')
-        for x,row in enumerate(self.field):
-            items_row = []
-            for item in row: items_row.append(SYMBOLS[item])
-            drawing.add_row(str(x+1), items_row[0], items_row[1], items_row[2])
-        self.console.print(drawing)
+        return positions
+        
 
+    # Game functions
+    def is_free(self, x, y):
+        return True if self.field[y][x] == EMPTY else False
+    
+    def make_move(self, tagger, x, y):
+        place = self.is_free(x,y)
+        self.field[y][x] = tagger if place else self.field[y][x]
+        return place
 
-    def get_start(self):
-        return CROSS if random.randint(0,1) == 0 else NOUGHT
+    def check_win(self, tagger):
+        t = 0
+        for item in self.win_positions:
+            j = 0
+            for positions in item:
+                j += 1 if tagger == self.field[positions[0]][positions[1]] else 0
+            t += 1 if j == 3 else 0
+        return True if t >= 1 else False
 
-    def wait(self, wait_for):
-        if wait_for == 0:
-            self.console.print(f"Ожидание [bold green]{PLAYER_NAME[1]}[/bold green] хода ...")
-            return input("> ")
-        if wait_for == 1:
-            self.console.print(f"[bold green]{ENEMY_NAME[0]}[/bold green] совершил ход, приступим к следующему ходу? ")
-            input("> ")
-
-    def start_game(self):
-        a = PLAYER_NAME[0] if self.start == PLAYER else ENEMY_NAME[0]
-        print(Panel(f"Первыми ходят: [bold]{ NAMES[self.start] } ( {a} )"))
-        self.draw_field()
-    def game_cycle(self):
-        self.start_game()
-        if self.start == PLAYER: p1, p2 = PLAYER, ENEMY
-        else: p1, p2 = ENEMY, PLAYER
-        while(True):
-            self.make_turn(p1)
-            if self.check_win() != None:
-                self.draw_win(self.check_win())
-                self.draw_field()
-                break
-            print(Panel(f"Теперь ходят: [bold]{NAMES[p2]}"))
-            self.draw_field()
-            self.make_turn(p2)
-            if self.check_win() != None:
-                self.draw_win(self.check_win())
-                self.draw_field()
-                break
-            print(Panel(f"Теперь ходят: [bold]{NAMES[p1]}"))
-            self.draw_field()
-
-    def make_turn(self, activator):
-        if activator == PLAYER:
-            while(True):
-                place = self.wait(0)
-                try:
-                    pos = list(place.upper())
-                    pos[0] = D[pos[0]]
-                    ints = []
-                    for element in pos:
-                        ints.append(int(element)-1)
-                    if self.field[ints[1]][ints[0]] == SPACE:
-                        self.field[ints[1]][ints[0]] = activator
-                        break
-                    else:
-                        self.console.print(f'{PLAYER_NAME[0]}, выбрали уже занятое поле, попробуйте выбрать другое...',style='warning')
-
-                except:
-                    self.console.print(f'{PLAYER_NAME[0]}, ввели неверное значение, попробуйте еще раз...', style = 'warning')
+    # Input functions
+    def can_decipher(self, string : str):
+        if len(string) != 2:
+            return False
         else:
-            while(True):
-                ints = [random.randint(0,2),random.randint(0,2)]
-                try:
-                    if self.field[ints[1]][ints[0]] == SPACE:
-                        self.field[ints[1]][ints[0]] = activator
+            return False if list(string)[0] not in COLS or list(string)[1] not in ROWS else True
+
+    def decipher_position(self, string : str):
+        return (int(list(string)[1])-1, POS[list(string)[0]])
+        
+
+    # Main functions
+    def end(self):
+        if self.check_win(PLAYER):
+            self.draw.draw(self.field)
+            print("(+) You win!")
+        if self.check_win(ENEMY):
+            self.draw.draw(self.field)
+            print("(-) You lose!")
+
+    def main_loop(self):
+        while True:
+            #player
+            while True:
+                self.draw.draw(self.field)
+                print("(*) Your Move")
+                out = input(">> ")
+                if self.can_decipher(out) == True and self.make_move(PLAYER, self.decipher_position(out)[1], self.decipher_position(out)[0]):
+                        print("(*) You made Move")
+                        self.draw.draw(self.field)
                         break
-                except:
-                    pass
-            self.wait(1)
+                else:
+                    print("(!) Try again...")
 
-    def check_win(self):
-        win = None
-        #rows
-        for z in self.field:
-            noughts = 0
-            crosses = 0
-            for x in z:
-                if x != SPACE:
-                    noughts += 1 if x == NOUGHT else 0
-                    crosses += 1 if x == CROSS else 0
-            if win == None:
-                if crosses == 3:
-                    win = CROSS
-                elif noughts == 3:
-                    win = NOUGHT
-
-        #cols
-        cols = []
-        for z,x in enumerate(range(0,3)):
-            b = []
-            for c, v in enumerate(range(0,3)): b.append(self.field[c][z])
-            cols.append(b)
-
-        for z in cols:
-            noughts = 0
-            crosses = 0
-            for x in z:
-                if x != SPACE:
-                    noughts += 1 if x == NOUGHT else 0
-                    crosses += 1 if x == CROSS else 0
-            if win == None:
-                if crosses == 3:
-                    win = CROSS
-                elif noughts == 3:
-                    win = NOUGHT
-
-        #diagonals
-        temp = []
-        for x in self.field:
-            for z in x:
-                temp.append(z)
-
-        if temp[0] == NOUGHT and temp[4] == NOUGHT and temp[8] == NOUGHT:
-            win = NOUGHT
-        elif temp[0] == CROSS and temp[4] == CROSS and temp[8] == CROSS:
-            win = CROSS
-
-        if temp[2] == NOUGHT and temp[4] == NOUGHT and temp[6] == NOUGHT:
-            win = NOUGHT
-        elif temp[2] == CROSS and temp[4] == CROSS and temp[6] == CROSS:
-            win = CROSS
-
-        return win
-
-    def draw_win(self, winner):
-        winner_name = PLAYER_NAME[0] if winner == PLAYER else ENEMY_NAME[0]
-        if winner == NOUGHT:
-            print(Panel(f"Выйграли: [bold]{NAMES[NOUGHT]} ( {winner_name} )"))
-        if winner == CROSS:
-            print(Panel(f"Выйграли: [bold]{NAMES[CROSS]} ( {winner_name} )"))
-
-
-
-
+            if self.check_win(PLAYER) or self.check_win(ENEMY):
+                self.end()
+                break
+            #enemy
+            while True:
+                self.draw.draw(self.field)
+                print("(*) Enemy move")
+                if self.make_move(ENEMY, randint(0, 2), randint(0, 2)):
+                        self.draw.draw(self.field)
+                        print("(*) Enemy made move")
+                        break
+            if self.check_win(PLAYER) or self.check_win(ENEMY):
+                self.end()
+                break
 
 if __name__ == '__main__':
     game = Game()
