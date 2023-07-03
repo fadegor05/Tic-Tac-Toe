@@ -67,24 +67,24 @@ class Game():
     def end(self):
         if self.check_win(PLAYER):
             self.draw.draw(self.field)
-            print("(+) You win!")
+            self.draw.win(PLAYER)
         if self.check_win(ENEMY):
             self.draw.draw(self.field)
-            print("(-) You lose!")
+            self.draw.win(ENEMY)
 
     def main_loop(self):
         while True:
             #player
             while True:
                 self.draw.draw(self.field)
-                print("(*) Your Move")
+                self.draw.draw_move(PLAYER)
                 out = input(">> ")
                 if self.can_decipher(out) == True and self.make_move(PLAYER, self.decipher_position(out)[1], self.decipher_position(out)[0]):
-                        print("(*) You made Move")
+                        self.draw.draw_moved(PLAYER)
                         self.draw.draw(self.field)
                         break
                 else:
-                    print("(!) Try again...")
+                    self.draw.draw_error()
 
             if self.check_win(PLAYER) or self.check_win(ENEMY):
                 self.end()
@@ -92,10 +92,10 @@ class Game():
             #enemy
             while True:
                 self.draw.draw(self.field)
-                print("(*) Enemy move")
+                self.draw.draw_move(ENEMY)
                 if self.make_move(ENEMY, randint(0, 2), randint(0, 2)):
                         self.draw.draw(self.field)
-                        print("(*) Enemy made move")
+                        self.draw.draw_moved(ENEMY)
                         break
             if self.check_win(PLAYER) or self.check_win(ENEMY):
                 self.end()
