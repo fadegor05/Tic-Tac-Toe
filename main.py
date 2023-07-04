@@ -3,7 +3,7 @@ from draw import Draw
 from random import randint
 
 # Main game class
-class Game():
+class Game:
     def __init__(self):
         # Initialization
         self.draw = Draw(ICONS)
