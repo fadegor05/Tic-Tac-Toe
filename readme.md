@@ -4,4 +4,6 @@
 
 ##### You can install rich library using pip:
 
-`pip install rich`
+```
+pip install rich
+```
